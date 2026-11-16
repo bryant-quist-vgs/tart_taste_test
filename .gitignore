@@ -1,0 +1,88 @@
+# ---------------------------------------------------------------------------
+# Local work history and generated views: authoring scratch, rendered output,
+# and review records. Never tracked.
+# ---------------------------------------------------------------------------
+/.checklists/_authoring/
+/.checklists/rendered/
+/.assessments/
+
+# ---------------------------------------------------------------------------
+# taste-test runtime state for this checkout. Its layout is specified in
+# docs/protocol.md.
+# ---------------------------------------------------------------------------
+/.taste-test/
+
+# ---------------------------------------------------------------------------
+# Python: virtual environments, build output, and tool caches.
+# uv.lock and .python-version are reproducibility inputs and stay tracked.
+# ---------------------------------------------------------------------------
+/.venv/
+/build/
+/dist/
+*.egg-info/
+__pycache__/
+*.py[cod]
+/.pytest_cache/
+/.mypy_cache/
+/.ruff_cache/
+
+# Throwaway files of the Makefile gates (docs-lint, llm-size-guard)
+/.gate-scratch/
+
+# Test and coverage output
+/.coverage
+/.coverage.*
+/htmlcov/
+/coverage.xml
+/junit.xml
+
+# ---------------------------------------------------------------------------
+# Virtual machine artifacts. Tart keeps its images under ~/.tart, never in the
+# repository; these rules stop an exported or downloaded image being added.
+# ---------------------------------------------------------------------------
+*.tvm
+*.ipsw
+*.iso
+*.qcow2
+*.dmg
+
+# ---------------------------------------------------------------------------
+# Local secrets and environment files. Ignoring a file is not a security
+# control: never place credentials in this repository in the first place.
+# ---------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.pem
+*.p12
+*.key
+/.netrc
+
+# ---------------------------------------------------------------------------
+# macOS
+# ---------------------------------------------------------------------------
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+.fseventsd
+.DocumentRevisions-V100
+.TemporaryItems
+.VolumeIcon.icns
+.apdisk
+
+# ---------------------------------------------------------------------------
+# Editors and agent tooling (local, per-user state only)
+# ---------------------------------------------------------------------------
+/.idea/
+/.vscode/
+*.swp
+*.swo
+*~
+.\#*
+\#*\#
+/.claude/settings.local.json
+/.claude/worktrees/
+/.claude/.cc-writes/

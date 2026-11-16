@@ -1,0 +1,58 @@
+# CI runs exactly one gate: `make commit`, the same aggregate a contributor runs
+# before committing. Add or change a check in the Makefile, never here.
+#
+# No job starts a virtual machine: the test suite puts a fake `tart` on PATH, so
+# a hosted runner without nested virtualization is sufficient.
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+# A newer push to a pull request supersedes the older run. Runs on main are
+# never cancelled, so every commit on main gets a result.
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+jobs:
+  commit-gate:
+    # macOS is the only supported host: bash 3.2 and BSD userland, as on the
+    # machines that run the tool. The image is pinned so an OS upgrade is a
+    # reviewed change here.
+    runs-on: macos-15
+    timeout-minutes: 20
+    steps:
+      # Actions are pinned to release commits; the tag is in the comment.
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4.4.0
+        with:
+          persist-credentials: false
+
+      - uses: astral-sh/setup-uv@37802adc94f370d6bfd71619e3f0bf239e1f3b78 # v7.6.0
+
+      # glossarian and llm-size-guard are installed by the same Make target
+      # contributors use, at the commits pinned in the Makefile. They live in
+      # private sibling repositories: LINTER_REPOS_TOKEN (a read-only token for
+      # those two repositories) is the one externally provisioned input of this
+      # job. It is handed to git through the step's environment only, by
+      # rewriting the SSH remote to HTTPS, and is never written to disk.
+      #
+      # Accepted exposure: this step runs the pull request's own Makefile, and a
+      # pull request from a branch of this repository can also change this
+      # workflow, so anyone who can push a branch here can read the token. It
+      # must therefore be a fine-grained token that can only read those two
+      # repositories, and nothing else may ever be granted to it. Pull requests
+      # from forks do not receive it.
+      - name: Install documentation linters
+        env:
+          GIT_CONFIG_COUNT: "1"
+          GIT_CONFIG_KEY_0: url.https://x-access-token:${{ secrets.LINTER_REPOS_TOKEN }}@github.com/.insteadOf
+          GIT_CONFIG_VALUE_0: ssh://git@github.com/
+        run: make install-linters
+
+      - name: Commit gate
+        run: make commit

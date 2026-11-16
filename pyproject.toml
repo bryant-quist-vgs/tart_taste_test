@@ -1,0 +1,62 @@
+[project]
+name = "tart-taste-test"
+dynamic = ["version"]
+description = "Run a repository's tests inside a throwaway Tart VM, on request from a sandboxed agent, before the code is trusted on the host."
+readme = "README.md"
+# The floor is the interpreter the gate actually runs (.python-version), so the
+# declared range never includes a version nothing has tested.
+requires-python = ">=3.14"
+dependencies = []
+
+[project.scripts]
+taste-test = "tart_taste_test.client_cli:main"
+taste-test-broker = "tart_taste_test.broker_cli:main"
+
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+# The version has one home: __version__ in the package.
+[tool.hatch.version]
+path = "src/tart_taste_test/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/tart_taste_test"]
+
+[dependency-groups]
+dev = [
+    "mypy>=1.18",
+    "pytest>=9.0",
+    "ruff>=0.15",
+    "shellcheck-py>=0.10",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+python_files = ["*_test.py"]
+addopts = "-q"
+
+[tool.ruff]
+src = ["src"]
+target-version = "py314"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "RUF", "S"]
+ignore = [
+    # S603 fires on every subprocess call, and S607 on every program found
+    # through PATH. This tool exists to run `tart` and `git`; each call passes an
+    # argument list (never a shell string) built from validated values, and the
+    # shell-injection rules (S602, S604, S605) stay enabled.
+    "S603",
+    "S607",
+]
+
+[tool.ruff.lint.per-file-ignores]
+# Tests assert, build fixtures in temporary directories, and run fake programs.
+"tests/**" = ["S101", "S108"]
+
+[tool.mypy]
+python_version = "3.14"
+strict = true
+warn_unreachable = true
