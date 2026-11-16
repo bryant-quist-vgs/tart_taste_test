@@ -1,0 +1,55 @@
+# How to test this repository in a VM with its own tool.
+#
+# This file takes effect only from the default branch: the broker reads it from
+# its mirror of the remote, never from a working tree. It has not yet been run
+# against a real VM (see docs/open-questions.md); check the image first with
+#   taste-test-broker doctor --image ghcr.io/cirruslabs/ubuntu:latest
+#
+# What a run here covers, compared with `make commit` on the host:
+#   test       the Python suite (the pytest half of `make test`)
+#   installer  the install script's shell tests (the other half of `make test`)
+#   lint       ruff, mypy and shellcheck (what `make lint` runs)
+# Not covered in the VM: `make docs-lint` (glossarian) and `make llm-size-guard`.
+# Those need tools this setup does not install; run `make commit` on the host
+# for the full gate.
+schema = 1
+
+[vm]
+# Deliberately a moving tag for now: no image has been checked with `doctor`
+# yet, so there is no digest worth pinning. Pin one (name@sha256:...) once an
+# image is known to work, so that what the tests run on changes only by review.
+image = "ghcr.io/cirruslabs/ubuntu:latest"
+
+[setup]
+# Once per default-branch commit, with the setup network: install uv at a fixed
+# version, then the locked development environment. Later runs need no network.
+# The installer puts uv in ~/.local/bin, which a non-interactive shell does not
+# have on PATH, so every command here names that directory itself.
+# The uv version is fixed in the URL, but the script is not checked against a
+# checksum: it runs inside the guest only, with the setup network.
+# shellcheck comes from the locked `shellcheck-py` package. The lockfile has no
+# prebuilt package for arm64 Linux, so there `uv sync` builds it, which
+# downloads the shellcheck program. That build has not been tried.
+run = [
+    "curl -LsSf https://astral.sh/uv/0.13.5/install.sh | sh",
+    'PATH="$HOME/.local/bin:$PATH" uv sync --locked',
+]
+timeout_seconds = 1200
+
+[run]
+# Candidate code gets the `isolated` network mode: no IPv4 destination is
+# allowed (what else it keeps out is open question Q2). `--offline` keeps uv
+# from trying.
+network = "isolated"
+timeout_seconds = 900
+
+[commands.test]
+# `"$@"` is where arguments given after `taste-test run test --` go.
+run = 'PATH="$HOME/.local/bin:$PATH" uv run --offline --locked pytest "$@"'
+allow_args = true
+
+[commands.installer]
+run = "bash taste_test_install_test.sh"
+
+[commands.lint]
+run = 'PATH="$HOME/.local/bin:$PATH"; uv run --offline --locked ruff check src tests && uv run --offline --locked mypy src tests && uv run --offline --locked shellcheck taste_test_install.sh taste_test_install_test.sh'

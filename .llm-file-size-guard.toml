@@ -1,0 +1,28 @@
+# Repository policy for `llm-size-guard check` (run by `make llm-size-guard`).
+#
+# Limits are the guard's defaults, stated here so the policy is visible in the
+# repository instead of depending on a machine's user or system configuration:
+#   warning  500 lines /  5,000 words / 40,000 characters
+#   error    800 lines /  8,000 words / 64,000 characters
+# A file that reaches the warning level is split by responsibility before it
+# reaches the error level; see "Module boundaries" in docs/design.md.
+
+[thresholds]
+warn_lines = 500
+fail_lines = 800
+words_per_line = 10
+chars_per_line = 80
+growth_lines = 100
+defer_days = 7
+
+[selection]
+# Extensions scanned, in addition to the files the guard always selects by name
+# (such as Makefile) or by shebang. uv.lock is generated and is not listed.
+extensions = ["py", "sh", "md", "toml", "yml", "yaml", "json"]
+ignore_dirs = []
+
+[tracking]
+# Accept and defer decisions live in this tracked file, not in per-machine
+# state, so a suppression is reviewed like any other change and the gate gives
+# the same answer on every machine and in CI.
+state_path = ".llm-size-guard-state.json"
